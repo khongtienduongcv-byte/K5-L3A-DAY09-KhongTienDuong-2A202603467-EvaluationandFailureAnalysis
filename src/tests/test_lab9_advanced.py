@@ -63,6 +63,43 @@ def test_integrity_flags_loosened_spec():
     assert gate.integrity_check(base, base, SPEC, SPEC) == []
 
 
+def test_integrity_flags_missing_grader_value_failure_and_slice_relabel():
+    from lab9 import gate
+
+    base = _report(copy.deepcopy(ROWS), {"pass_rate": 1.0})
+    missing_value = copy.deepcopy(base)
+    missing_value["rows"][0]["pass_rate"] = None
+    assert gate.integrity_check(missing_value, base, SPEC)
+
+    failed_evaluator = copy.deepcopy(base)
+    failed_evaluator["evaluator_failures"] = ["E-001@1:grader:error"]
+    assert gate.integrity_check(failed_evaluator, base, SPEC)
+
+    relabelled = copy.deepcopy(base)
+    relabelled["rows"][0]["slices"] = []
+    assert gate.integrity_check(relabelled, base, SPEC)
+
+    wrong_type = copy.deepcopy(base)
+    wrong_type["rows"][0]["pass_rate"] = 1.0
+    assert gate.integrity_check(wrong_type, base, SPEC)
+
+
+def test_integrity_ratchets_blocking_and_slice_rules():
+    from lab9 import gate
+
+    base = _report(copy.deepcopy(ROWS), {"pass_rate": 1.0})
+    base_spec = copy.deepcopy(SPEC)
+    base_spec["slices"] = [{"name": "denial", "metric": "pass_rate", "min": 0.9,
+                            "no_significant_drop": True, "blocking": True}]
+
+    loose = copy.deepcopy(base_spec)
+    loose["metrics"][0]["blocking"] = False
+    loose["slices"] = []
+    problems = gate.integrity_check(base, base, loose, base_spec)
+    assert any("no longer blocking" in problem for problem in problems)
+    assert any("slice denial removed" in problem for problem in problems)
+
+
 def test_slice_check_blocks_a_slice_below_floor():
     from lab9 import gate
 

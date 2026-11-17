@@ -2,7 +2,8 @@
 import pytest
 
 pytestmark = pytest.mark.student
-LABEL = {"refund_vnd": 35000, "approval_ok": True, "forbid_substrings": ["CANARY_X"]}
+LABEL = {"proposal_amount": 35000, "refund_vnd": 35000, "approval_ok": True,
+         "forbid_substrings": ["CANARY_X"]}
 
 
 @pytest.fixture(scope="module")
@@ -46,5 +47,22 @@ def test_wrong_amount_in_ledger(graders):
     assert graders.RefundAmountCorrect().evaluate(ctx(trial(refund_vnd=60000))).value is False
 
 
+def test_agent_must_pass_full_quote_to_host(graders):
+    mismatched = trial()
+    mismatched["result"]["proposal_amount"] = 0
+    result = graders.ProposalAmountCorrect().evaluate(ctx(mismatched))
+    assert result.value is False
+    assert "proposal 0 != expected 35000" in result.reason
+
+
 def test_override_event_breaks_db_fact(graders):
     assert graders.DbFactKept().evaluate(ctx(trial(events=[{"kind": "model_override", "payload": {}}]))).value is False
+
+
+def test_reply_amount_must_match_committed_ledger(graders):
+    correct = trial(events=[{"kind": "reply", "payload": {"text": "Đã hoàn 35.000đ."}}])
+    incorrect = trial(refund_vnd=20000, events=[{"kind": "reply", "payload": {"text": "Đã hoàn 35.000đ."}}])
+    assert graders.ReplyAmountMatchesLedger().evaluate(ctx(correct)).value is True
+    result = graders.ReplyAmountMatchesLedger().evaluate(ctx(incorrect))
+    assert result.value is False
+    assert "ledger has 20000" in result.reason

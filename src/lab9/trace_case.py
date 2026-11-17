@@ -37,7 +37,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     case = investigate(args.shape, args.claim, args.seed)
     t, label = case["trial"], case["label"]
-    print(f"== {args.shape} {args.claim}@{args.seed}  lab8 grader: {'PASS' if t['lab8_pass'] else 'FAIL'} ({t['lab8_reason']})")
+    print(f"== {args.shape} {args.claim}@{args.seed}  run_id={t['result'].get('run_id')}  "
+          f"lab8 grader: {'PASS' if t['lab8_pass'] else 'FAIL'} ({t['lab8_reason']})")
     print("-- trace (step, kind, payload)")
     for i, e in enumerate(t["events"], 1):
         print(f"  {i:>2} {e.get('kind', '?'):<18} {json.dumps(e.get('payload'), ensure_ascii=False)[:110]}")

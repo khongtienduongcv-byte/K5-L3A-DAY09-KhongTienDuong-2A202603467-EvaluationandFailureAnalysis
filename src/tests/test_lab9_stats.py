@@ -36,6 +36,13 @@ def test_kappa_undefined_for_constant_judge(stats):
         stats.cohen_kappa(["PASS"] * 5, ["PASS"] * 5)
 
 
+def test_confusion_rejects_mismatched_or_unknown_labels(stats):
+    with pytest.raises(ValueError):
+        stats.confusion(["PASS"], [])
+    with pytest.raises(ValueError):
+        stats.confusion(["MAYBE"], ["PASS"])
+
+
 def test_rogan_gladen_clips(stats):
     assert stats.rogan_gladen(0.28, 0.8, 66 / 70) == pytest.approx(0.3, abs=0.01)
     assert stats.rogan_gladen(0.0, 0.8, 0.9) == 0.0
